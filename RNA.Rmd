@@ -1,0 +1,617 @@
+---
+title: "Reporte de practicas RNA-seq"
+author: "Itzy y Reyli"
+date: "2024-03-17"
+output: html_output:
+  prettydoc::html_pretty:
+    theme: hpstr
+    toc: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+Objective: Perform the analysis of RNA-Seq data (complete pipeline).
+
+Each team will have to search, download, and analyze RNA-Seq data from a scientific article.
+
+For the choice of data, you should: - Choose a species of your choice, I recommend a model species - Have a minimum of 3 biological replicates per contrast - Data from a scientific article - I recommend having a minimum of 2 contrasts - Good quality data
+
+## Modules
+
+-   Fastqc/0.12.1
+
+-   Multiqc/1.5
+
+-   Trimmomatic/0.39
+
+-   R/4.0.2
+
+-   Star/2.7.9a
+
+# RNA-seq Report
+
+------------------------------------------------------------------------
+
+## Download the RNA-seq public data
+
+In this section, we outline the process of downloading data relevant to the study presented in the paper titled "RNA-seq analysis reveals significant transcriptome changes in huntingtin-null human neuroblastoma cells."
+
+The datasets that were generated and analyzed throughout the course of this study have been made publicly accessible in the GEO (Gene Expression Omnibus) repository, under the accession number [GSE178467](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE178467).
+
+Within this repository, the ID for the associated BioProject, PRJNA739157, is provided. This ID can then be utilized to locate further details about the dataset through a search in the [ENA](https://www.ebi.ac.uk/ena/browser/home) (European Nucleotide Archive) browser.
+
+![](images/enabrowser.png)
+
+Upon locating the accession using the provided ID, we proceeded to download all the FASTQ data files associated with the study.
+
+![](images/fastq.png)
+
+Therefore, we made a job to download the files with format FASTQ in our directory /mnt/Guanina/bioinfo24/Equipoazulito/human/scripts/
+
+Then we sent a job to the cluster.
+
+```{bash Download the data, eval=FALSE}
+#!/bin/env bash
+#$ -N download
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/052/SRR14862052/SRR14862052_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/054/SRR14862054/SRR14862054_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/055/SRR14862055/SRR14862055_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/057/SRR14862057/SRR14862057_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/058/SRR14862058/SRR14862058_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/058/SRR14862058/SRR14862058_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/056/SRR14862056/SRR14862056_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/056/SRR14862056/SRR14862056_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/052/SRR14862052/SRR14862052_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/060/SRR14862060/SRR14862060_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/053/SRR14862053/SRR14862053_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/054/SRR14862054/SRR14862054_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/060/SRR14862060/SRR14862060_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/059/SRR14862059/SRR14862059_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/055/SRR14862055/SRR14862055_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/059/SRR14862059/SRR14862059_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/057/SRR14862057/SRR14862057_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/053/SRR14862053/SRR14862053_1.fastq.gz
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+## Control quality analysis
+
+We took a look at the quality of all the FASTQ files we downloaded to make sure they were good to go for further analysis.
+
+### Fastqc
+
+We save our data in the directory /mnt/Guanina/bioinfo24/Equipoazulito/data/ and with the fastqc module, we used:
+
+```{bash Fastqc ,eval=FALSE}
+
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+fastqc data/* -o quality1/fastqc
+
+```
+
+### Multiqc
+
+Therefore, we execute the program MULTIQC, in order to visualize all the fastqc in only one file and make it easier.
+
+```{bash multiqc1, eval=FALSE}
+
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+multiqc quality1/fastqc/* -o quality1/multiqc/
+
+```
+
+By running this, we obtain the next results:
+
+![](images/Genstat.png)
+
+## Trimming
+
+To improve the quality of the files and correct any errors in the sequences, we performed trimming. Here's the command we ran in a job to get it done:
+
+```{bash trimming, eval=FALSE}
+#!/bin/env bash
+#$ -N trimming
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load trimmomatic/0.39
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/data/
+for i in *_1.fastq.gz;
+do
+    echo "Processing files: $i and ${i%_1.fastq.gz}_2.fastq.gz"
+    trimmomatic PE -threads 4 -phred33 $i ${i%_1.fastq.gz}"_2.fastq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_1_trimmed.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_1_unpaired.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_2_trimmed.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_2_unpaired.fq.gz" \
+    ILLUMINACLIP:/mnt/Guanina/bioinfo24/Equipoazulito/human/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:35
+done
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+as a result, we obtain:
+
+SRR14862052_1_trimmed.fq.gz SRR14862054_1_trimmed.fq.gz SRR14862056_1_trimmed.fq.gz SRR14862058_1_trimmed.fq.gz SRR14862060_1_trimmed.fq.gzSRR14862052_1_unpaired.fq.gz SRR14862054_1_unpaired.fq.gz SRR14862056_1_unpaired.fq.gz SRR14862058_1_unpaired.fq.gz SRR14862060_1_unpaired.fq.gzSRR14862052_2_trimmed.fq.gz SRR14862054_2_trimmed.fq.gz SRR14862056_2_trimmed.fq.gz SRR14862058_2_trimmed.fq.gz SRR14862060_2_trimmed.fq.gzSRR14862052_2_unpaired.fq.gz SRR14862054_2_unpaired.fq.gz SRR14862056_2_unpaired.fq.gz SRR14862058_2_unpaired.fq.gz SRR14862060_2_unpaired.fq.gzSRR14862053_1_trimmed.fq.gz SRR14862055_1_trimmed.fq.gz SRR14862057_1_trimmed.fq.gz SRR14862059_1_trimmed.fq.gzSRR14862053_1_unpaired.fq.gz SRR14862055_1_unpaired.fq.gz SRR14862057_1_unpaired.fq.gz SRR14862059_1_unpaired.fq.gzSRR14862053_2_trimmed.fq.gz SRR14862055_2_trimmed.fq.gz SRR14862057_2_trimmed.fq.gz SRR14862059_2_trimmed.fq.gzSRR14862053_2_unpaired.fq.gz SRR14862055_2_unpaired.fq.gz SRR14862057_2_unpaired.fq.gz SRR14862059_2_unpaired.fq.gz
+
+### Fastqc
+
+We cleaned up the data by removing poor quality sequences and adapters, then checked the quality across all files.
+
+```{bash fastqc2, eval=FALSE}
+#!/bin/env bash
+#$ -N quality2
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+module load fastqc/0.12.1
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human
+
+fastqc TRIM_results/*.fq.gz -o quality2
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+### Multiqc
+
+Additionally, we ran MultiQC, as mentioned above, to generate a comprehensive summary report of the quality checks for all the files.
+
+```{bash multiqc2, eval=FALSE}
+
+#!/bin/env bash
+#$ -N multiquality2
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+module load multiqc/1.5
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+
+multiqc quality2/*
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+## STAR
+
+### Index
+
+We performed indexing using STAR, as we will be aligning the sequences. Indexing improves the speed and efficiency of these analyses by allowing the software to quickly locate and access relevant parts of the genome.
+
+To perform the indexing, we needed the annotations file, so we downloaded the file from the [GENcode](https://www.gencodegenes.org) website that contain all regions, that provided us comprehensive information about gene structures, including the location of exons, introns, coding sequences, and other important features. We used the format GTF. Since our organism is human, we accessed the following link and downloaded the corresponding annotations file: <https://www.gencodegenes.org/human/>
+
+![](images/gencode.png)
+
+When we already have the downloaded file, we transfer it to the cluster from our computer using the following command.
+
+```{bash gencode, eval=FALSE}
+
+scp Downloads/gencode.v38.chr_patch_hapl_scaff.annotation.gtf ipereza@dna.lavis.unam.mx:/mnt/Guanina/bioinfo24/Equipoazulito/human/annotation
+
+```
+
+Now that we have our annotation file, we can proceed with the indexing process.
+
+```{bash starindex, eval=FALSE}
+
+#!/bin/env bash
+#$ -N star
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index
+
+STAR --runThreadN 12 \
+--runMode genomeGenerate \
+--genomeDir /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index \
+--genomeFastaFiles /mnt/Archives/genome/human/GRCh38/UCSC/chromosomes/hg38.fa \
+--sjdbGTFfile /mnt/Guanina/bioinfo24/Equipoazulito/human/annotation/gencode.v38.chr_patch_hapl_scaff.annotation.gtf \
+--sjdbOverhang 149
+
+
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+### Counts with star
+
+After indexing, we counted the genes per read using the STAR module. Here's the job we ran for this purpose:
+
+```{bash count, eval=FALSE}
+
+#!/bin/env bash
+#$ -N countstar
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+index=/mnt/Guanina/bioinfo24/Equipoazulito/human//STAR_index
+FILES=/mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/*_1_trimmed.fq.gz
+for f in $FILES
+do
+    base=$(basename $f _1_trimmed.fq.gz)
+    echo $base
+    STAR --runThreadN 12 --genomeDir $index --readFilesIn $f /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/$base"_2_trimmed.fq.gz" \
+    --outSAMtype BAM SortedByCoordinate \
+    --quantMode GeneCounts \
+    --readFilesCommand zcat \
+    --outFileNamePrefix /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_output/$base
+done
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+Now we have all the counts per gene available for analysis.
+
+## Scripts R
+
+To effectively organize and classify our samples, we created a metadata table that distinguishes between control and treatment samples.
+
+| Sample      | Type            |
+|-------------|-----------------|
+| SRR14862052 | control         |
+| SRR14862055 | control         |
+| SRR14862058 | control         |
+| SRR14862053 | tratamiento_b7  |
+| SRR14862056 | tratamiento_b7  |
+| SRR14862059 | tratamiento_b7  |
+| SRR14862054 | tratamiento_c12 |
+| SRR14862057 | tratamiento_c12 |
+| SRR14862060 | tratamiento_c12 |
+
+: metadata
+
+After that, we proceeded with the following scripts:
+
+### Script load data
+
+The following script allows us to import the data from the STAR alignment into R, for subsequent analysis of differential expression with DESeq2.
+
+```{r loaddata, eval=FALSE}
+# Cargar archivos
+#indir <- "/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/STAR_output"
+indir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_output/"
+outdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/"
+
+# Opcion A - moverme a la carpeta y buscar
+setwd(indir)
+files <- dir(pattern = "ReadsPerGene.out.tab")
+
+# Opcion B -  sin movernos de carpeta
+files <- dir(indir, pattern = "ReadsPerGene.out.tab")
+
+# crear matriz de cuentas
+counts <- c() # esta sera la matriz
+for(i in seq_along(files)){
+  x <- read.table(file = files[i], sep = "\t", header = F, as.is = T)
+  # as.is para no convertir tipo de datos
+  counts <- cbind(counts, x[,2])
+}
+
+# Cargar Metadatos
+metadata <- read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/metadata.csv", header = F)
+# Renombrar columnas en la metadata
+colnames(metadata) <- c("sample_id", "type")
+# Convertir a formato dataframe
+counts <- as.data.frame(counts)
+rownames(counts) <- x[,1] # Renombrar las filas con el nombre de los genes
+colnames(counts) <- sub("_ReadsPerGene.out.tab", "", files)
+
+# Eliminar las 4 primeras filas
+# counts <- counts[5:129239, ] # Filtramos los rows con informacion general sobre el mapeo
+counts <- counts[-c(1:4),]
+
+# Almacenar metadata y matriz de cuentas
+save(metadata, counts, file = paste0(outdir, "counts/raw_counts.RData"))
+write.csv(counts, file = paste0(outdir,"counts/raw_counts.csv"))
+
+# Guardar informacion de ejecucion
+sessionInfo()
+
+```
+
+### Script DEseq2
+
+The following script allows us to perform the Differential Expression Analysis using the data from the STAR alignment in R.
+
+
+```{r, eval=FALSE}
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(DESeq2)
+library(tximport)
+
+# --- Load data -----
+# Cargar archivos
+outdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/counts"
+figdir <- '/mnt/Guanina/bioinfo24/data/human/results/figures/'
+
+#Cargar variable "counts", proveniente del script "load_data_inR.R"
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/counts/raw_counts.RData") 
+samples <- metadata$sample_id # Extraer los nombres de los Transcriptomas
+metadata$type <- as.factor(metadata$type) # convertir a factor
+
+# --- DEG ----
+counts <- counts[which(rowSums(counts) > 10),] #Seleccionamos genes con mas de 10 cuentas
+
+# Convertir al formato dds
+dds <- DESeqDataSetFromMatrix(countData =  counts, 
+            colData = metadata, design = ~type) #Se hace un DESeqDataSet para realizar un analisis
+
+dim(dds) # checar las dimensiones
+#[[1] 29253     9
+
+##  -- Asignar la referencia y generar contrastes -----
+# Las comparaciones se realizan por pares
+#Si no se indica de manera explicita que se va a comparara, lo va a tomar de manera alfabetica, 
+# en este caso se indica que control es la referencia, 
+dds$type <- relevel(dds$type, ref = "control") 
+
+## --- Obtener archivo dds ----
+
+dds <- DESeq(dds)
+
+# estimating size factors
+# estimating dispersions
+# gene-wise dispersion estimates
+# mean-dispersion relationship
+# final dispersion estimates
+# fitting model and testing
+
+# Obtener la lista de coeficientes o contrastes
+resultsNames(dds)
+
+#[1] "Intercept"                       "type_tratamiento_b7_vs_control" 
+#[3] "type_tratamiento_c12_vs_control"
+
+# Guardar la salida del diseno
+save(metadata, dds, file = paste0(outdir, 'dds_tratamiento_vs_control.RData'))
+
+## --- Normalizacion de los datos ---------
+# Opcion 1. log2(n + 1)
+ntd <- normTransform(dds)
+
+# Opcion 2. regularized logarithm or rlog
+# Normalizacion de las cuentas por logaritmo y podrias hacer el analisis usando este objeto en lugar del dds
+ddslog <- rlog(dds, blind = F) 
+
+# Opcion 3. vsd
+# Estima la tendencia de dispersion de los datos y calcula la varianza, hace una normalizacion de las 
+# cuentas con respecto al tamaño de la libreria
+vsdata <- vst(dds, blind = F) 
+
+## --- Deteccion de batch effect ----
+
+# Almacenar la grafica
+png(file = paste0(figdir, "PCA_rlog1.png"))
+plt <- plotPCA(ddslog, intgroup = "type")
+print(plt)
+dev.off()
+
+# Almacenar la grafica
+png(file = paste0(figdir, "PCA_vsd.png"))
+plt <- plotPCA(vsdata, intgroup = "type")
+print(plt)
+dev.off()
+
+# Guardar la salida del diseno (vsdata)
+save(metadata, vsdata, file = paste0(outdir, 'vst_tratamiento_vs_control.RData'))
+
+# En la grafica de las primeras dos componentes principales son notorias las diferencias 
+# entre tipos de muestras con respecto a las componente principales que capturan su varianza, 
+# cada componente principal representa una combinacion lineal de las variables (en este caso genes) 
+# que explican la mayor cantidad de varianza en nuestros datos (las cuentas).
+
+
+## ---- Obtener informacion del contraste 1 ----
+# results(dds, contrast=c("condition","treated","untreated"))
+res_b7 <- results(dds, name = "type_tratamiento_b7_vs_control")
+res_b7
+
+summary(res_b7)
+
+#out of 29253 with nonzero total read count
+#adjusted p-value < 0.1
+#LFC > 0 (up)       : 0, 0%
+#LFC < 0 (down)     : 0, 0%
+#outliers [1]       : 15, 0.051%
+#low counts [2]     : 0, 0%
+#(mean count < 1)
+
+# Guardar los resultados
+write.csv(res_b7, file=paste0(outdir, 'type_tratamiento_b7_vs_control.csv'))
+
+## ---- Obtener informacion del contraste 2 ----
+res_c12 <- results(dds, name = "type_tratamiento_c12_vs_control")
+res_c12
+
+summary(res_c12)
+
+# out of 29253 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 0, 0%
+# LFC < 0 (down)     : 0, 0%
+# outliers [1]       : 15, 0.051%
+# low counts [2]     : 0, 0%
+
+# Guardar los resultados
+write.csv(res_c12, file=paste0(outdir, 'type_tratamiento_c12_vs_control.csv'))
+
+```
+
+
+### Script visualizacion datos
+
+
+```{r, eval=FALSE}
+
+
+######
+# Script : Visualizacion grafica de los resultados de DEG
+# Author: 
+# Date: 27/02/2024
+# Description: El siguiente script nos permite realiza el Analisis de Terminos GO
+# a partir de los datos provenientes del Analisis de DEG
+# Primero correr el script "DEG_analysis.R"
+# Usage: Correr las lineas en un nodo de prueba en el cluster.
+# Arguments:
+#   - Input: 
+#       - dds_Times_vs_control.RData (dds), 
+#       - vst_Times_vs_control.RData (vsdata) 
+#       - archivos de salida de DEG en formato CSV (res_15t, res_30t, res_4t) 
+#   - Output: Volcano plot y Heatmap
+#######
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(dplyr)
+library(pheatmap)
+library(ggplot2)
+
+# --- Load data -----
+# Cargar archivos
+figdir <- '/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures/'
+
+#Cargar variable "dds", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/dds_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsdds_tratamiento_vs_control.RData")
+
+#Cargar variable "vsdata", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/vst_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsvst_tratamiento_vs_control.RData") 
+
+#Cargar variable "res_30t", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/DE_30min_vs_control.csv") 
+trata_b7 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_b7_vs_control.csv") 
+trata_c12 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_c12_vs_control.csv")
+
+# ---- volcano plot ----
+df <- as.data.frame(res_b7)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>%
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+# treatmentb7
+png(file = paste0(figdir, "VolcanoPlotb7_vs_control.png"))
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentb7 vs control") +
+  xlab(expression("log"[2]"FC")) +
+  ylab(expression("-log"[10]"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+## treatment c12
+
+df <- as.data.frame(res_c12)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>%
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+
+png(file = paste0(figdir, "VolcanoPlotc12_vs_control.png"))
+
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentb7 vs control") +
+  xlab(expression("log"[2]"FC")) +
+  ylab(expression("-log"[10]"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+
+
+
+# --- Heatmap (vsd) -----
+topGenes <- head(order(res_b7$padj), 20) # Obtener el nombre de los 20 genes con p value mas significativo
+
+png(file = paste0(figdir, "Heatmap_vsd_topgenes.png"))
+pheatmap(assay(vsdata)[topGenes,], cluster_rows=FALSE, show_rownames=TRUE,
+         cluster_cols=FALSE)
+dev.off()
+
+# --- Heatmap  (por contrastes) (log2 Fold Change) -----
+betas <- coef(dds)
+colnames(betas)
+
+# [1] "Intercept"                 "type_PLS_15min_vs_CONTROL"
+# [3] "type_PLS_30min_vs_CONTROL" "type_PLS_4h_vs_CONTROL"
+
+mat <- betas[topGenes, -c(1,2)] # crear la matriz con el topgene de genes
+
+# Filtro de 3 log2foldchange
+thr <- 3 
+mat[mat < -thr] <- -thr
+mat[mat > thr] <- thr
+
+# Almacenar la grafica
+png(file = paste0(figdir, "Heatmap_log2FoldChage_topgenes.png"))
+pheatmap(mat, breaks=seq(from=-thr, to=thr, length=101),
+         cluster_col=FALSE)
+dev.off()
+
+# https://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#time-course-experiments
+
+```
+
+
+The following script allows us to perform the Gene Ontology (GO) Term Analysis using the data from the Differential Expression Analysis.
+
+### Script Goterm
+
+The following script allows us to perform the functional annotation of differentially expressed genes using the data from the STAR alignment in R.
