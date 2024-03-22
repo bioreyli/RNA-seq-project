@@ -1,0 +1,23 @@
+#!/bin/env bash
+#$ -N countstar
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+index=/mnt/Guanina/bioinfo24/Equipoazulito/human//STAR_index
+FILES=/mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/*_1_trimmed.fq.gz
+for f in $FILES
+do
+    base=$(basename $f _1_trimmed.fq.gz)
+    echo $base
+    STAR --runThreadN 12 --genomeDir $index --readFilesIn $f /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/$base"_2_trimmed.fq.gz" \
+    --outSAMtype BAM SortedByCoordinate \
+    --quantMode GeneCounts \
+    --readFilesCommand zcat \
+    --outFileNamePrefix /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_output/$base
+done
+
+echo "===== Pipeline done ====="
+date
+
