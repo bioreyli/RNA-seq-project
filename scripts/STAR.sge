@@ -1,0 +1,21 @@
+#!/bin/env bash
+#$ -N star
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index
+
+STAR --runThreadN 12 \
+--runMode genomeGenerate \
+--genomeDir /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index \
+--genomeFastaFiles /mnt/Archives/genome/human/GRCh38/UCSC/chromosomes/hg38.fa \
+--sjdbGTFfile /mnt/Guanina/bioinfo24/Equipoazulito/human/annotation/gencode.v38.chr_patch_hapl_scaff.annotation.gtf \
+--sjdbOverhang 149
+
+
+
+echo "===== Pipeline done ====="
+date
+

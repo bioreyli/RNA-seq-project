@@ -1,0 +1,16 @@
+#!/bin/env bash
+#$ -N quality2
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+module load fastqc/0.12.1
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human
+
+fastqc TRIM_results/*.fq.gz -o quality2
+
+echo "===== Pipeline done ====="
+date

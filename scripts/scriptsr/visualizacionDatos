@@ -1,0 +1,134 @@
+######
+# Script : Visualizacion grafica de los resultados de DEG
+# Author: Itzy Pérez y Reyli Sanchez
+# Date: 27/02/2024
+# Description: El siguiente script nos permite realiza el Analisis de Terminos GO
+# a partir de los datos provenientes del Analisis de DEG
+# Primero correr el script "DEG_analysis.R"
+# Usage: Correr las lineas en un nodo de prueba en el cluster.
+# Arguments:
+#   - Input: 
+#       - dds_Times_vs_control.RData (dds), 
+#       - vst_Times_vs_control.RData (vsdata) 
+#       - archivos de salida de DEG en formato CSV (res_15t, res_30t, res_4t) 
+#   - Output: Volcano plot y Heatmap
+#######
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(dplyr)
+library(pheatmap)
+library(ggplot2)
+
+# --- Load data -----
+# Cargar archivos
+figdir <- '/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures/'
+
+#Cargar variable "dds", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/dds_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsdds_vs_control.RData")
+
+#Cargar variable "vsdata", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/vst_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsvst_vs_control.RData") 
+
+#Cargar variable "res_30t", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/DE_30min_vs_control.csv") 
+tratab7 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_b7_vs_control.csv") 
+tratab12 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_c12_vs_control.csv") 
+
+# ---- treatment b7 ----
+# ---- volcano plot ----
+df <- as.data.frame(res1)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>% 
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+# treatmentb7
+png(file = paste0(figdir, "VolcanoPlotb7_vs_control.png"))
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentb7 vs control") +
+  xlab(expression("log"[2]*"FC")) + 
+  ylab(expression("-log"[10]*"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+## treatment c12
+# ---- volcano plot ----
+df <- as.data.frame(res2)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>% 
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+# treatmentb7
+png(file = paste0(figdir, "VolcanoPlotc12_vs_control.png"))
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentc12 vs control") +
+  xlab(expression("log"[2]*"FC")) + 
+  ylab(expression("-log"[10]*"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+# treatment b7
+# --- Heatmap (vsd) -----
+topGenes <- head(order(res1$padj), 20) # Obtener el nombre de los 20 genes con p value mas significativo
+
+png(file = paste0(figdir, "Heatmapb7_vsd_topgenes.png"))
+pheatmap(assay(vsdata)[topGenes,], cluster_rows=FALSE, show_rownames=TRUE,
+         cluster_cols=FALSE)
+dev.off()
+
+# treatment c12
+# --- Heatmap (vsd) -----
+topGenes <- head(order(res2$padj), 20) # Obtener el nombre de los 20 genes con p value mas significativo
+
+png(file = paste0(figdir, "Heatmapc12_vsd_topgenes.png"))
+pheatmap(assay(vsdata)[topGenes,], cluster_rows=FALSE, show_rownames=TRUE,
+         cluster_cols=FALSE)
+dev.off()
+
+
+# --- Heatmap  (por contrastes) (log2 Fold Change) -----
+
+betas_b7 <- coef(dds)[, "type_tratamiento_b7_vs_control."]
+mat_b7 <- betas_b7[topGenes]
+mat_b7[mat_b7 < -thr] <- -thr
+mat_b7[mat_b7 > thr] <- thr
+
+png(file = paste0(figdir, "Heatmap_log2FoldChage_topgenes_b7.png"))
+pheatmap(mat_b7, breaks = seq(from = -thr, to = thr, length = 101), cluster_col = FALSE)
+dev.off()
+
+# ---- Para tratamiento c12 ----
+betas_c12 <- coef(dds)[, "type_tratamiento_c12_vs_control."]
+mat_c12 <- betas_c12[topGenes]
+mat_c12[mat_c12 < -thr] <- -thr
+mat_c12[mat_c12 > thr] <- thr
+
+png(file = paste0(figdir, "Heatmap_log2FoldChage_topgenes_c12.png"))
+pheatmap(mat_c12, breaks = seq(from = -thr, to = thr, length = 101), cluster_col = FALSE)
+dev.off()
+
+
+

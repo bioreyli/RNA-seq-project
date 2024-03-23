@@ -1,0 +1,19 @@
+Sample	adapter_content	Sequences flagged as poor quality	sequence_duplication_levels	avg_sequence_length	Encoding	per_base_sequence_quality	Total Bases	Sequence length	File type	basic_statistics	per_sequence_gc_content	sequence_length_distribution	Total Sequences	per_base_n_content	per_base_sequence_content	overrepresented_sequences	%GC	total_deduplicated_percentage	Filename	per_sequence_quality_scores
+SRR14862052_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1 Gbp	40.0	Conventional base calls	pass	pass	pass	27239879.0	pass	warn	warn	46.0	58.6941530218	SRR14862052_1.fastq.gz	pass
+SRR14862052_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1 Gbp	40.0	Conventional base calls	pass	warn	pass	27239879.0	pass	fail	warn	46.0	58.3652672781	SRR14862052_2.fastq.gz	pass
+SRR14862053_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	pass	pass	31653307.0	pass	warn	warn	45.0	61.1992233887	SRR14862053_1.fastq.gz	pass
+SRR14862053_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	pass	pass	31653307.0	pass	fail	warn	45.0	60.8872285287	SRR14862053_2.fastq.gz	pass
+SRR14862054_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.4 Gbp	40.0	Conventional base calls	pass	warn	pass	36672312.0	pass	warn	warn	45.0	60.9259131665	SRR14862054_1.fastq.gz	pass
+SRR14862054_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.4 Gbp	40.0	Conventional base calls	pass	warn	pass	36672312.0	pass	fail	warn	46.0	60.226617092	SRR14862054_2.fastq.gz	pass
+SRR14862055_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	32018300.0	pass	warn	warn	45.0	60.1100968801	SRR14862055_1.fastq.gz	pass
+SRR14862055_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	32018300.0	pass	fail	warn	46.0	59.9785617876	SRR14862055_2.fastq.gz	pass
+SRR14862056_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	pass	pass	32242011.0	pass	warn	warn	44.0	58.3947231955	SRR14862056_1.fastq.gz	pass
+SRR14862056_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	pass	pass	32242011.0	pass	fail	warn	45.0	57.6855021484	SRR14862056_2.fastq.gz	pass
+SRR14862057_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.3 Gbp	40.0	Conventional base calls	pass	pass	pass	33288452.0	pass	warn	warn	43.0	63.4013246341	SRR14862057_1.fastq.gz	pass
+SRR14862057_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.3 Gbp	40.0	Conventional base calls	pass	pass	pass	33288452.0	pass	fail	warn	43.0	62.97112524	SRR14862057_2.fastq.gz	pass
+SRR14862058_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.3 Gbp	40.0	Conventional base calls	pass	pass	pass	33278246.0	pass	warn	warn	45.0	54.2610859888	SRR14862058_1.fastq.gz	pass
+SRR14862058_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.3 Gbp	40.0	Conventional base calls	pass	warn	pass	33278246.0	pass	fail	warn	46.0	53.5101156346	SRR14862058_2.fastq.gz	pass
+SRR14862059_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	32135159.0	pass	warn	warn	45.0	59.4694001264	SRR14862059_1.fastq.gz	pass
+SRR14862059_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	32135159.0	pass	fail	warn	46.0	59.0236664819	SRR14862059_2.fastq.gz	pass
+SRR14862060_1	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	31621765.0	pass	warn	warn	45.0	63.3707389158	SRR14862060_1.fastq.gz	pass
+SRR14862060_2	pass	0.0	warn	40.0	Sanger / Illumina 1.9	pass	1.2 Gbp	40.0	Conventional base calls	pass	warn	pass	31621765.0	pass	fail	warn	45.0	62.883754124	SRR14862060_2.fastq.gz	pass
