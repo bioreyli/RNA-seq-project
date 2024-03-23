@@ -1,0 +1,1071 @@
+---
+title: "Reporte de practicas RNA-seq"
+author: "Itzy y Reyli"
+date: "2024-03-17"
+output: html_document
+  prettydoc::html_pretty:
+    theme: hpstr
+    toc: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Data description
+
+| Bioproject                                                          | Data                                                                                                |
+|------------------------------|------------------------------------------|
+| Organism                                                            | Homo sapiens                                                                                        |
+| Type of libraries                                                   | **STAR, HTSeq, DESeq2**                                                                             |
+| Selection method (e.g. poly A)                                      | cDNA                                                                                                |
+| Number of transcriptomes                                            | Three transcriptomes by group. Total 9                                                              |
+| Number of biological replicates                                     | 9                                                                                                   |
+| Sequencer used                                                      | NextSeq 500 (Illumina)                                                                              |
+| Distribution of samples (control and treatment) (how many of each?) | RNA was isolated from WT, B7 and C12 HttKO cells. RNA samples in triplicates for each group.        |
+| Sequencing depth of each transcriptome                              | 30.84 million for WT samples, 32.01 million for B7 samples and 33.86 million for C12 HttKO samples. |
+
+# Abstract
+
+The present study investigates gene expression profiles via RNA-seq analysis in human samples, with a focus on the Huntington protein (Htt) and its relevance to Huntington's disease. Three types of replicates were analyzed: WT, B7, and C12. The findings revealed differential expression of multiple genes potentially implicated in regulating Htt protein and, consequently, the pathogenesis of Huntington's disease. This comprehensive analysis yields valuable insights, particularly in the context of utilizing tools such as STAR for index creation, DESeq2 for differential expression analysis and data normalization, and GO Terms for interpreting biological experiment results. These insights extend to gene expression analysis, pathway identification, and comprehension of gene-protein interactions across diverse biological and pathological conditions. This report serves as a potential blueprint for conducting bioinformatics analyses.
+
+Objective: Perform the analysis of RNA-Seq data (complete pipeline).
+
+# RNA-seq Report
+
+------------------------------------------------------------------------
+
+## Download the RNA-seq public data
+
+Modules
+
+-   Fastqc/0.12.1
+
+-   Multiqc/1.5
+
+-   Trimmomatic/0.39
+
+-   R/4.0.2
+
+-   Star/2.7.9a
+
+In this section, we outline the process of downloading data relevant to the study presented in the paper titled "RNA-seq analysis reveals significant transcriptome changes in huntingtin-null human neuroblastoma cells."
+
+The datasets that were generated and analyzed throughout the course of this study have been made publicly accessible in the GEO (Gene Expression Omnibus) repository, under the accession number [GSE178467](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE178467).
+
+Within this repository, the ID for the associated BioProject, PRJNA739157, is provided. This ID can then be utilized to locate further details about the dataset through a search in the [ENA](https://www.ebi.ac.uk/ena/browser/home) (European Nucleotide Archive) browser.
+
+![](images/enabrowser.png)
+
+Upon locating the accession using the provided ID, we proceeded to download all the FASTQ data files associated with the study.
+
+![](images/fastq.png)
+
+Therefore, we made a job to download the files with format FASTQ in our directory /mnt/Guanina/bioinfo24/Equipoazulito/human/scripts/
+
+Then we sent a job to the cluster.
+
+```{bash Download the data, eval=FALSE}
+#!/bin/env bash
+#$ -N download
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/052/SRR14862052/SRR14862052_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/054/SRR14862054/SRR14862054_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/055/SRR14862055/SRR14862055_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/057/SRR14862057/SRR14862057_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/058/SRR14862058/SRR14862058_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/058/SRR14862058/SRR14862058_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/056/SRR14862056/SRR14862056_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/056/SRR14862056/SRR14862056_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/052/SRR14862052/SRR14862052_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/060/SRR14862060/SRR14862060_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/053/SRR14862053/SRR14862053_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/054/SRR14862054/SRR14862054_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/060/SRR14862060/SRR14862060_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/059/SRR14862059/SRR14862059_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/055/SRR14862055/SRR14862055_1.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/059/SRR14862059/SRR14862059_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/057/SRR14862057/SRR14862057_2.fastq.gz
+wget -nc ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/053/SRR14862053/SRR14862053_1.fastq.gz
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+## Control quality analysis
+
+We took a look at the quality of all the FASTQ files we downloaded to make sure they were good to go for further analysis.
+
+### Fastqc
+
+We save our data in the directory /mnt/Guanina/bioinfo24/Equipoazulito/data/ and with the fastqc module, we used:
+
+```{bash Fastqc, eval=FALSE}
+
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+fastqc data/* -o quality1/fastqc
+
+```
+
+### Multiqc
+
+Therefore, we execute the program MULTIQC, in order to visualize all the fastqc in only one file and make it easier.
+
+```{bash multiqc1, eval=FALSE}
+
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+multiqc quality1/fastqc/* -o quality1/multiqc/
+
+```
+
+By running this, we obtain the next results:
+
+![](images/Genstat.png) ![](images/fastqc/fastqc_adapter_content_plot.png) ![](images/fastqc/fastqc_per_base_sequence_quality_plot.png) ![](images/fastqc/fastqc_per_sequence_quality_scores_plot.png) ![](images/fastqc/Per%20Base%20Sequence%20Content.png)
+
+![](images/fastqc/fastqc_sequence_duplication_levels_plot.png) ![](images/fastqc/fastqc_overrepresented_sequencesi_plot.png)
+
+## Trimming
+
+To improve the quality of the files and correct any errors in the sequences, we performed trimming. Here's the command we ran in a job to get it done:
+
+```{bash trimming, eval=FALSE}
+#!/bin/env bash
+#$ -N trimming
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load trimmomatic/0.39
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/data/
+for i in *_1.fastq.gz;
+do
+    echo "Processing files: $i and ${i%_1.fastq.gz}_2.fastq.gz"
+    trimmomatic PE -threads 4 -phred33 $i ${i%_1.fastq.gz}"_2.fastq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_1_trimmed.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_1_unpaired.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_2_trimmed.fq.gz" \
+    /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/${i%_1.fastq.gz}"_2_unpaired.fq.gz" \
+    ILLUMINACLIP:/mnt/Guanina/bioinfo24/Equipoazulito/human/TruSeq3-PE-2.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:20 MINLEN:35
+done
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+as a result, we obtain:
+
+SRR14862052_1_trimmed.fq.gz SRR14862054_1_trimmed.fq.gz SRR14862056_1_trimmed.fq.gz SRR14862058_1_trimmed.fq.gz SRR14862060_1_trimmed.fq.gzSRR14862052_1_unpaired.fq.gz SRR14862054_1_unpaired.fq.gz SRR14862056_1_unpaired.fq.gz SRR14862058_1_unpaired.fq.gz SRR14862060_1_unpaired.fq.gzSRR14862052_2_trimmed.fq.gz SRR14862054_2_trimmed.fq.gz SRR14862056_2_trimmed.fq.gz SRR14862058_2_trimmed.fq.gz SRR14862060_2_trimmed.fq.gzSRR14862052_2_unpaired.fq.gz SRR14862054_2_unpaired.fq.gz SRR14862056_2_unpaired.fq.gz SRR14862058_2_unpaired.fq.gz SRR14862060_2_unpaired.fq.gzSRR14862053_1_trimmed.fq.gz SRR14862055_1_trimmed.fq.gz SRR14862057_1_trimmed.fq.gz SRR14862059_1_trimmed.fq.gzSRR14862053_1_unpaired.fq.gz SRR14862055_1_unpaired.fq.gz SRR14862057_1_unpaired.fq.gz SRR14862059_1_unpaired.fq.gzSRR14862053_2_trimmed.fq.gz SRR14862055_2_trimmed.fq.gz SRR14862057_2_trimmed.fq.gz SRR14862059_2_trimmed.fq.gzSRR14862053_2_unpaired.fq.gz SRR14862055_2_unpaired.fq.gz SRR14862057_2_unpaired.fq.gz SRR14862059_2_unpaired.fq.gz
+
+### Fastqc
+
+We cleaned up the data by removing poor quality sequences and adapters, then checked the quality across all files.
+
+```{bash fastqc2, eval=FALSE}
+#!/bin/env bash
+#$ -N quality2
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+module load fastqc/0.12.1
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human
+
+fastqc TRIM_results/*.fq.gz -o quality2
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+### Multiqc
+
+Additionally, we ran MultiQC, as mentioned above, to generate a comprehensive summary report of the quality checks for all the files.
+
+```{bash multiqc2, eval=FALSE}
+
+#!/bin/env bash
+#$ -N multiquality2
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+date
+echo "===== Beginning pipeline ====="
+
+module load multiqc/1.5
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/
+
+multiqc quality2/*
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+In the second multiqc we could observe the samples without the contamination, also the trimming remove the adapters that include the data.
+
+![](images/fastqc2/generalstats2.png)
+
+![](images/fastqc2/fastqc_adapter_content_plot.png)
+
+![](images/fastqc2/fastqc_per_base_n_content_plot.png) ![](images/fastqc2/fastqc_per_sequence_gc_content_plot.png) ![](images/fastqc2/fastqc_sequence_duplication_levels_plot.png)
+
+![](images/fastqc2/fastqc_overrepresented_sequencesi_plot.png) ![](images/fastqc2/fastqc_per_base_sequence_quality_plot.png) ![](images/fastqc2/fastqc_per_sequence_quality_scores_plot.png) ![](images/fastqc2/fastqc_sequence_length_distribution_plot.png)
+
+![](images/fastqc2/Per%20base%20sequence%20content.jpeg)
+
+During the trimming process, it was observed that the predominant length of the sequences was 40 nucleotides. Therefore, when generating the index with the STAR software, the value of 35 was set in the "minlen" parameter of the code. This was done considering that, by increasing this value, all sequences could be eliminated.
+
+## STAR
+
+### Index
+
+We performed indexing using STAR, as we will be aligning the sequences. Indexing improves the speed and efficiency of these analyses by allowing the software to quickly locate and access relevant parts of the genome.
+
+To perform the indexing, we needed the annotations file, so we downloaded the file from the [GENcode](https://www.gencodegenes.org) website that contain all regions, that provided us comprehensive information about gene structures, including the location of exons, introns, coding sequences, and other important features. We used the format GTF. Since our organism is human, we accessed the following link and downloaded the corresponding annotations file: <https://www.gencodegenes.org/human/>
+
+![](images/gencode.png)
+
+When we already have the downloaded file, we transfer it to the cluster from our computer using the following command.
+
+
+Now that we have our annotation file, we can proceed with the indexing process.
+
+```{bash starindex, eval=FALSE}
+
+#!/bin/env bash
+#$ -N star
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+cd /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index
+
+STAR --runThreadN 12 \
+--runMode genomeGenerate \
+--genomeDir /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_index \
+--genomeFastaFiles /mnt/Archives/genome/human/GRCh38/UCSC/chromosomes/hg38.fa \
+--sjdbGTFfile /mnt/Guanina/bioinfo24/Equipoazulito/human/annotation/gencode.v38.chr_patch_hapl_scaff.annotation.gtf \
+--sjdbOverhang 149
+
+
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+### Counts with star
+
+After indexing, we counted the genes per read using the STAR module. Here's the job we ran for this purpose:
+
+```{bash count, eval=FALSE}
+
+#!/bin/env bash
+#$ -N countstar
+#$ -o $JOB_NAME.log
+#$ -e $JOB_NAME.error
+#$ -S /bin/bash
+
+module load star/2.7.9a
+index=/mnt/Guanina/bioinfo24/Equipoazulito/human//STAR_index
+FILES=/mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/*_1_trimmed.fq.gz
+for f in $FILES
+do
+    base=$(basename $f _1_trimmed.fq.gz)
+    echo $base
+    STAR --runThreadN 12 --genomeDir $index --readFilesIn $f /mnt/Guanina/bioinfo24/Equipoazulito/human/TRIM_results/$base"_2_trimmed.fq.gz" \
+    --outSAMtype BAM SortedByCoordinate \
+    --quantMode GeneCounts \
+    --readFilesCommand zcat \
+    --outFileNamePrefix /mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_output/$base
+done
+
+echo "===== Pipeline done ====="
+date
+
+```
+
+Now we have all the counts per gene available for analysis.
+
+## Analisys
+
+To effectively organize and classify our samples, we created a metadata table that distinguishes between control and treatment samples.
+
+| Sample      | Type            |
+|-------------|-----------------|
+| SRR14862052 | control         |
+| SRR14862053 | tratamiento_b7  |
+| SRR14862054 | tratamiento_c12 |
+| SRR14862055 | control         |
+| SRR14862056 | tratamiento_b7  |
+| SRR14862057 | tratamiento_c12 |
+| SRR14862058 | control         |
+| SRR14862059 | tratamiento_b7  |
+| SRR14862060 | tratamiento_c12 |
+
+: metadata
+
+**We should order our samples numerically to avoid any issues when running our scripts.**
+
+After that, we proceeded with the following scripts:
+
+### Script load data
+
+The following script allows us to import the data from the STAR alignment into R, for subsequent analysis of differential expression with DESeq2.
+
+```{r loaddata, eval=FALSE}
+# Cargar archivos
+#indir <- "/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/STAR_output"
+indir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/STAR_output/"
+outdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/"
+
+# Opcion A - moverme a la carpeta y buscar
+setwd(indir)
+files <- dir(pattern = "ReadsPerGene.out.tab")
+
+# Opcion B -  sin movernos de carpeta
+files <- dir(indir, pattern = "ReadsPerGene.out.tab")
+
+# crear matriz de cuentas
+counts <- c() # esta sera la matriz
+for(i in seq_along(files)){
+  x <- read.table(file = files[i], sep = "\t", header = F, as.is = T)
+  # as.is para no convertir tipo de datos
+  counts <- cbind(counts, x[,2])
+}
+
+# Cargar Metadatos
+metadata <- read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/metadata.csv", header = F)
+# Renombrar columnas en la metadata
+colnames(metadata) <- c("sample_id", "type")
+# Convertir a formato dataframe
+counts <- as.data.frame(counts)
+rownames(counts) <- x[,1] # Renombrar las filas con el nombre de los genes
+colnames(counts) <- sub("_ReadsPerGene.out.tab", "", files)
+
+# Eliminar las 4 primeras filas
+# counts <- counts[5:129239, ] # Filtramos los rows con informacion general sobre el mapeo
+counts <- counts[-c(1:4),]
+
+# Almacenar metadata y matriz de cuentas
+save(metadata, counts, file = paste0(outdir, "counts/raw_counts.RData"))
+write.csv(counts, file = paste0(outdir,"counts/raw_counts.csv"))
+
+# Guardar informacion de ejecucion
+sessionInfo()
+
+```
+
+### Script DEseq2
+
+The following script allows us to perform the Differential Expression Analysis using the data from the STAR alignment in R.
+
+```{r, eval=FALSE}
+
+######
+# Script : Analisis de expresion diferencial
+# Author: Reyli Sanchez e Itzy Pérez
+# Date: 21/03/2024
+# Description: El siguiente script nos permite realiza el Analisis de expresion Diferencial
+# a partir de los datos provenientes del alineamiento de STAR a R,
+# Primero correr el script "load_data_inR.R"
+# Usage: Correr las lineas en un nodo de prueba en el cluster.
+# Arguments:
+#   - Input: Cargar la variable raw_counts.RData que contiene la matriz de cuentas y la metadata
+#   - Output: DEG
+#######
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(tximport)
+library(DESeq2)
+
+# --- Load data -----
+# Cargar archivos
+outdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/counts"
+figdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures/"
+
+#Cargar variable "counts", proveniente del script "load_data_inR.R"
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/counts/raw_counts.RData") 
+samples <- metadata$sample_id # Extraer los nombres de los Transcriptomas
+metadata$type <- as.factor(metadata$type) # convertir a factor
+
+# --- DEG ----
+counts <- counts[which(rowSums(counts) > 10),] #Seleccionamos genes con mas de 10 cuentas
+
+# Convertir al formato dds
+dds <- DESeqDataSetFromMatrix(countData =  counts, 
+                              colData = metadata, design = ~type) #Se hace un DESeqDataSet para realizar un analisis
+
+dim(dds) # checar las dimensiones
+#[[1] 29253     9
+
+##  -- Asignar la referencia y generar contrastes -----
+# Las comparaciones se realizan por pares
+#Si no se indica de manera explicita que se va a comparara, lo va a tomar de manera alfabetica, 
+# en este caso se indica que control es la referencia, 
+dds$type <- relevel(dds$type, ref = "control") 
+
+## --- Obtener archivo dds ----
+
+dds <- DESeq(dds)
+
+# estimating size factors
+# estimating dispersions
+# gene-wise dispersion estimates
+# mean-dispersion relationship
+# final dispersion estimates
+# fitting model and testing
+
+# Obtener la lista de coeficientes o contrastes
+resultsNames(dds)
+
+#[1] "Intercept"                       "type_tratamiento_b7_vs_control" 
+#[3] "type_tratamiento_c12_vs_control"
+
+# Guardar la salida del diseno
+save(metadata, dds, file = paste0(outdir, 'dds_vs_control.RData'))
+# Opcion 2. regularized logarithm or rlog
+# Normalizacion de las cuentas por logaritmo y podrias hacer el analisis usando este objeto en lugar del dds
+ddslog <- rlog(dds, blind = F) 
+
+# Opcion 3. vsd
+# Estima la tendencia de dispersion de los datos y calcula la varianza, hace una normalizacion de las 
+# cuentas con respecto al tamaño de la libreria
+vsdata <- vst(dds, blind = F) 
+
+## --- Deteccion de batch effect ----
+
+# Almacenar la grafica
+png(file = paste0(figdir, "PCA_rlog.png"))
+plt <- plotPCA(ddslog, intgroup = "type")
+print(plt)
+dev.off()
+
+# Almacenar la grafica
+png(file = paste0(figdir, "PCA_vsd.png"))
+plt <- plotPCA(vsdata, intgroup = "type")
+print(plt)
+dev.off()
+
+# Guardar la salida del diseno (vsdata)
+save(metadata, vsdata, file = paste0(outdir, 'vst_vs_control.RData'))
+
+# En la grafica de las primeras dos componentes principales son notorias las diferencias 
+# entre tipos de muestras con respecto a las componente principales que capturan su varianza, 
+# cada componente principal representa una combinacion lineal de las variables (en este caso genes) 
+# que explican la mayor cantidad de varianza en nuestros datos (las cuentas).
+
+
+## ---- Obtener informacion del contraste 1 ----
+# results(dds, contrast=c("condition","treated","untreated"))
+res1 <- results(dds, name = "type_tratamiento_b7_vs_control.")
+res1
+
+summary(res1)
+
+# out of 29253 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 2460, 8.4%
+# LFC < 0 (down)     : 2474, 8.5%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 3970, 14%
+# (mean count < 3)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+
+# Guardar los resultados
+write.csv(res1, file=paste0(outdir, 'type_tratamiento_b7_vs_control.csv'))
+
+## ---- Obtener informacion del contraste 2 ----
+res2 <- results(dds, name = "type_tratamiento_c12_vs_control.")
+res2
+
+# out of 29253 with nonzero total read count
+# adjusted p-value < 0.1
+# LFC > 0 (up)       : 1466, 5%
+# LFC < 0 (down)     : 2393, 8.2%
+# outliers [1]       : 0, 0%
+# low counts [2]     : 9075, 31%
+# (mean count < 7)
+# [1] see 'cooksCutoff' argument of ?results
+# [2] see 'independentFiltering' argument of ?results
+
+summary(res2)
+
+# Guardar los resultados
+write.csv(res2, file=paste0(outdir, 'type_tratamiento_c12_vs_control.csv'))
+```
+
+### Bash effect
+
+![](images/PCA_rlog.png)
+
+We used the Principal Component Analisys (PCA) to detect some batch effect. The PCA explain the greatest variation in the data, the first PC (explaining the largest source of variation) shows variation between samples from different tissues (the effect of interest), while the second PC (explaining the second largest source of variation) displays sample differences due to different batches. We can see three batches this is due to the control and treatment samples.
+
+### Script visualizacion datos
+
+```{r, eval=FALSE}
+
+
+######
+# Script : Visualizacion grafica de los resultados de DEG
+# Author: Itzy y reyli
+# Date: 27/02/2024
+# Description: El siguiente script nos permite realiza el Analisis de Terminos GO
+# a partir de los datos provenientes del Analisis de DEG
+# Primero correr el script "DEG_analysis.R"
+# Usage: Correr las lineas en un nodo de prueba en el cluster.
+# Arguments:
+#   - Input: 
+#       - dds_Times_vs_control.RData (dds), 
+#       - vst_Times_vs_control.RData (vsdata) 
+#       - archivos de salida de DEG en formato CSV (res_15t, res_30t, res_4t) 
+#   - Output: Volcano plot y Heatmap
+#######
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(dplyr)
+library(pheatmap)
+library(ggplot2)
+
+# --- Load data -----
+# Cargar archivos
+figdir <- '/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures/'
+
+#Cargar variable "dds", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/dds_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsdds_tratamiento_vs_control.RData")
+
+#Cargar variable "vsdata", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/vst_Times_vs_control.RData") 
+load("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countsvst_tratamiento_vs_control.RData") 
+
+#Cargar variable "res_30t", proveniente del script "DEG_analysis.R"
+#load("/mnt/Guanina/bioinfo24/data/Clase_RNASeq2024/results/DE_30min_vs_control.csv") 
+trata_b7 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_b7_vs_control.csv") 
+trata_c12 = read.csv("/mnt/Guanina/bioinfo24/Equipoazulito/human/results/countstype_tratamiento_c12_vs_control.csv")
+
+# ---- volcano plot ----
+df <- as.data.frame(res_b7)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>%
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+# treatmentb7
+png(file = paste0(figdir, "VolcanoPlotb7_vs_control.png"))
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentb7 vs control") +
+  xlab(expression("log"[2]"FC")) +
+  ylab(expression("-log"[10]"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+## treatment c12
+
+df <- as.data.frame(res_c12)
+# padj 0.05 y log2FoldChange de 2
+df <- df %>%
+  mutate(Expression = case_when(log2FoldChange >= 2 & padj < 0.05 ~ "Up-regulated",
+                                log2FoldChange <= -(2) & padj < 0.05 ~ "Down-regulated",
+                                TRUE ~ "Unchanged"))
+
+
+png(file = paste0(figdir, "VolcanoPlotc12_vs_control.png"))
+
+
+ggplot(df, aes(log2FoldChange, -log(padj,10))) +
+  geom_point(aes(color = Expression), size = 0.7) +
+  labs(title = "treatmentb7 vs control") +
+  xlab(expression("log"[2]"FC")) +
+  ylab(expression("-log"[10]"p-adj")) +
+  scale_color_manual(values = c("dodgerblue3", "gray50", "firebrick3")) +
+  guides(colour = guide_legend(override.aes = list(size=1.5))) +
+  geom_vline(xintercept = 2, linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_vline(xintercept = -(2), linetype = "dashed", color = "black", alpha = 0.5) +
+  geom_hline(yintercept = -log10(0.05), linetype = "dashed", color = "black", alpha = 0.5)
+
+dev.off()
+
+
+
+
+# --- Heatmap (vsd) -----
+topGenes <- head(order(res_b7$padj), 20) # Obtener el nombre de los 20 genes con p value mas significativo
+
+png(file = paste0(figdir, "Heatmap_vsd_topgenes.png"))
+pheatmap(assay(vsdata)[topGenes,], cluster_rows=FALSE, show_rownames=TRUE,
+         cluster_cols=FALSE)
+dev.off()
+
+# --- Heatmap  (por contrastes) (log2 Fold Change) -----
+betas <- coef(dds)
+colnames(betas)
+
+# [1] "Intercept"                 "type_PLS_15min_vs_CONTROL"
+# [3] "type_PLS_30min_vs_CONTROL" "type_PLS_4h_vs_CONTROL"
+
+mat <- betas[topGenes, -c(1,2)] # crear la matriz con el topgene de genes
+
+# Filtro de 3 log2foldchange
+thr <- 3 
+mat[mat < -thr] <- -thr
+mat[mat > thr] <- thr
+
+# Almacenar la grafica
+png(file = paste0(figdir, "Heatmap_log2FoldChage_topgenes.png"))
+pheatmap(mat, breaks=seq(from=-thr, to=thr, length=101),
+         cluster_col=FALSE)
+dev.off()
+
+# https://master.bioconductor.org/packages/release/workflows/vignettes/rnaseqGene/inst/doc/rnaseqGene.html#time-course-experiments
+
+```
+
+### Differential expression analysis of RNA seq data
+
+![](images/VolcanoPlotb7_vs_control.png) ![](images/VolcanoPlotc12_vs_control.png)
+
+We can see two graphics of the Volcano plot one for the B7 versus WT group and one for the C12 versus WT group. The red and blue dots represent DEGs that have a high statistical significance (FDR \< 0.01) and a substantial change in expression (an absolute value of log2FoldChange ≥ 1). That is, these are the genes that have a very low probability of being false positives and show a substantial change in expression between the groups compared
+
+![](images/Heatmap_log2FoldChage_topgenes_b7.png) ![](images/Heatmap_log2FoldChage_topgenes_c12.png)
+
+We can see two groups that cluster and their difference is very marked so that we can induce that if there are genes related to the expression of Huntingtin protein.
+
+![](images/Heatmapb7_vsd_topgenes.png) ![](images/Heatmapc12_vsd_topgenes.png) I
+
+n the heatmaps we can observe a hot zone in the gene ensg00000124942.14 and ensg0000003989.18 in three samples, that probably indicates some genes that are involved in Huninton's disease.
+
+The following script allows us to perform the Gene Ontology (GO) Term Analysis using the data from the Differential Expression Analysis.
+
+### Script Goterm
+
+The following script allows us to perform the functional annotation of differentially expressed genes using the data from the STAR alignment in R.
+
+```{r Functional analisys, eval=FALSE}
+#######
+# Script : Analisis de terminos GO
+# Author: Itzy Pérez y Reyli Sanchez
+# Date: 01/03/2024
+# Description: 
+# Primero correr el script "load_data_inR.R"
+# Usage: Correr las lineas en un nodo de prueba en el cluster.
+# Arguments:
+#   - Input: metadata.csv, cuentas de STAR (Terminacion ReadsPerGene.out.tab)
+#   - Output: Matriz de cuentas (CSV y RData)
+#######
+
+# qlogin 
+# module load r/4.0.2
+# R
+
+# --- Load packages ----------
+library(gprofiler2)
+library(enrichplot)
+library(DOSE)
+library(clusterProfiler)
+library(ggplot2)
+library(tidyverse)
+library(dplyr)
+
+# --- Load data -----
+# Cargar archivos
+indir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/"
+outdir <- "/mnt/Guanina/bioinfo24/Equipoazulito/human/results/"
+figdir <- '/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures/'
+
+# ---- Analisis de terminos Go ----
+# Seleccionar bases de datos
+sources_db <- c("GO:BP", "KEGG", "REAC", "TF", "MIRNA", "CORUM", "HP", "HPA", "WP")
+# Seleccionar solo archivos CSV
+files <- dir(indir, pattern = "^countstype_(.+)\\.csv$", "\\1")
+# ---- Ejemplo de UN SOLO ARCHIVO --------
+# Extraer el nombre del primer archivo
+plot_name <- gsub("^countstype_(.+)\\.csv$", "\\1", files[1])
+
+# Cargar archivo
+df <- read.csv(file = paste0(indir, files[1]), row.names = 'X')
+head(df)
+
+# Agregar informacion sobre la expresion
+abslogFC <- 2 # Corte de 2 log2FoldChange
+df <- df %>% 
+  dplyr::mutate(Expression = case_when(log2FoldChange >= abslogFC & padj < 0.05 ~ "Up-regulated",
+                                       log2FoldChange <= -(abslogFC) & padj < 0.05 ~ "Down-regulated",
+                                       TRUE ~ "Unchanged")) 
+
+# Obtener los nombres de los genes
+# > UP 
+up_genes <- df %>% filter(Expression == 'Up-regulated') %>% 
+  arrange(padj, desc(abs(log2FoldChange)))
+# Extraer solo el nombre de los genes
+up_genes <- rownames(up_genes) 
+tmp <- as.vector(up_genes)
+tmp <- gsub("\\.[0-9]*", ".", up_genes)
+tmp <- gsub("\\.$", "", tmp)
+head(tmp)
+# [1] "Q60765" "P17879" "Q9Z0F5" "Q3TX21" "P01101" "Q544D6"
+
+# > Down
+down_genes <- df %>% filter(Expression == 'Down-regulated') %>% 
+  arrange(padj, desc(abs(log2FoldChange)))
+# Extraer solo el nombre de los genes
+down_genes <- rownames(down_genes) 
+tmp2 <- as.vector(down_genes)
+tmp2 <- gsub("\\.[0-9]*", ".", down_genes)
+tmp2 <- gsub("\\.$", "", tmp2)
+head(tmp2)
+
+# 
+multi_gp <- gost(list("Upregulated" = tmp, 
+                      "Downregulated" = tmp2),
+                 organism = 'hsapiens',
+                 evcodes = TRUE,
+                 correction_method = "fdr", user_threshold = 0.05,
+                 multi_query = FALSE, ordered_query = TRUE, 
+                 sources = sources_db)
+## ---- colors ---
+# paleta de colores
+Category_colors <- data.frame(
+  category = c("GO:BP", "GO:CC", "GO:MF", "KEGG",
+               'REAC', 'TF', 'MIRNA', 'HPA', 'CORUM', 'HP', 'WP'), 
+  label = c('Biological Process', 'Cellular Component', 'Molecular Function',  "KEGG",
+            'REAC', 'TF', 'MIRNA', 'HPA', 'CORUM', 'HP', 'WP'),
+  colors =  c('#FF9900', '#109618','#DC3912', '#DD4477',
+              '#3366CC','#5574A6', '#22AA99', '#6633CC', '#66AA00', '#990099', '#0099C6'))
+
+## ----manhattan plot--------
+gostp1 <- gostplot(multi_gp, interactive = FALSE)
+
+# Guardar grafica
+ggsave(paste0(figdir, "ManhattanGO_", plot_name, ".png"),
+       plot = gostp1, dpi = 300)
+
+
+## ----Dataframe de todos los datos --------
+# Convertir a dataframe
+gost_query <- as.data.frame(multi_gp$result)
+
+# Extarer informacion en modo matriz de todos los resultados
+bar_data <- data.frame("term" = as.factor(gost_query$term_name), "condition" = gost_query$query, 
+                       "count" = gost_query$term_size, "p.adjust" = gost_query$p_value, 
+                       'category' = as.factor(gost_query$source), "go_id" = as.factor(gost_query$term_id),
+                       'geneNames' = gost_query$intersection
+)
+
+
+## ---- DOWN genes ----
+bar_data_down <- subset(bar_data, condition == 'Downregulated')
+
+# Ordenar datos y seleccion por pvalue
+bar_data_down <-head(bar_data_down[order(bar_data_down$p.adjust),],40) # order by pvalue
+bar_data_down_ordered <- bar_data_down[order(bar_data_down$p.adjust),] # order by pvalue
+bar_data_down_ordered<- bar_data_down_ordered[order(bar_data_down_ordered$category),] # order by category
+bar_data_down_ordered$p.val <- round(-log10(bar_data_down_ordered$p.adjust), 2)
+bar_data_down_ordered$num <- seq(1:nrow(bar_data_down_ordered)) # num category for plot
+
+# Guardar dataset
+save(bar_data_down_ordered, file = paste0(outdir, "DOWN_GO_", plot_name, ".RData"))
+
+# agregar colores para la grafica
+bar_data_down_ordered_mod <- left_join(bar_data_down_ordered, Category_colors, by= "category")
+
+### ---- DOWN genes (barplot) ----
+# Generar la grafica
+g.down <- ggplot(bar_data_down_ordered_mod, aes(p.val, reorder(term, -num), fill = category)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = p.val),
+    color = "black",
+    hjust = 0,
+    size = 2.2,
+    position = position_dodge(0)
+  ) +
+  labs(x = "-log10(p-value)" , y = NULL) +
+  scale_fill_manual(name='Category', 
+                    labels = unique(bar_data_down_ordered_mod$label), 
+                    values = unique(bar_data_down_ordered_mod$colors)) +
+  theme(
+    legend.position = "right",
+    axis.title.y = element_blank(),
+    strip.text.x = element_text(size = 11, face = "bold"),
+    strip.background = element_blank()
+  )+ theme_classic()
+
+
+# Guardar la figura
+ggsave(paste0(figdir,"barplotDOWN_GO_", plot_name, ".png"),
+       plot = g.down + theme_classic(), dpi = 600, width = 10, height = 5)
+
+
+
+## ---- UP genes ----
+bar_data_up <- subset(bar_data, condition == 'Upregulated')
+
+# Ordenar datos y seleccion por pvalue
+bar_data_up <-head(bar_data_up[order(bar_data_up$p.adjust),],40) # order by pvalue
+bar_data_up_ordered <- bar_data_up[order(bar_data_up$p.adjust),] # order by pvalue
+bar_data_up_ordered<- bar_data_up_ordered[order(bar_data_up_ordered$category),] # order by category
+bar_data_up_ordered$p.val <- round(-log10(bar_data_up_ordered$p.adjust), 2)
+bar_data_up_ordered$num <- seq(1:nrow(bar_data_up_ordered)) # num category for plot
+
+# Guardar dataset
+save(bar_data_up_ordered, file = paste0(outdir, "UP_GO_", plot_name, ".RData"))
+
+# agregar colores para la grafica
+bar_data_up_ordered_mod <- left_join(bar_data_up_ordered, Category_colors, by= "category")
+
+### ---- UP genes (barplot) ----
+# Generar la grafica
+g.up <- ggplot(bar_data_up_ordered_mod, aes(p.val, reorder(term, -num), fill = category)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = p.val),
+    color = "black",
+    hjust = 0,
+    size = 2.2,
+    position = position_dodge(0)
+  ) +
+  labs(x = "-log10(p-value)" , y = NULL) +
+  scale_fill_manual(name='Category', 
+                    labels = unique(bar_data_up_ordered_mod$label), 
+                    values = unique(bar_data_up_ordered_mod$colors)) +
+  theme(
+    legend.position = "right",
+    # panel.grid = element_blank(),
+    # axis.text.x = element_blank(),
+    # axis.ticks = element_blank(),
+    axis.title.y = element_blank(),
+    strip.text.x = element_text(size = 11, face = "bold"),
+    strip.background = element_blank() 
+  ) + theme_classic()
+
+# Guardar la figura
+ggsave(paste0(figdir, "barplotUP_GO_", plot_name, ".png"),
+       plot = g.up + theme_classic(), dpi = 600, width = 10, height = 5)
+
+
+# Extraer el nombre del segundo archivo
+plot_name <- gsub("^countstype_(.+)\\.csv$", "\\1", files[2])
+
+# Cargar archivo
+df <- read.csv(file = paste0(indir, files[2]), row.names = 'X')
+head(df)
+
+# Agregar informacion sobre la expresion
+abslogFC <- 2 # Corte de 2 log2FoldChange
+df <- df %>% 
+  dplyr::mutate(Expression = case_when(log2FoldChange >= abslogFC & padj < 0.05 ~ "Up-regulated",
+                                       log2FoldChange <= -(abslogFC) & padj < 0.05 ~ "Down-regulated",
+                                       TRUE ~ "Unchanged")) 
+
+# Obtener los nombres de los genes
+# > UP 
+up_genes <- df %>% filter(Expression == 'Up-regulated') %>% 
+  arrange(padj, desc(abs(log2FoldChange)))
+# Extraer solo el nombre de los genes
+up_genes <- rownames(up_genes) 
+tmp <- as.vector(up_genes)
+tmp <- gsub("\\.[0-9]*", ".", up_genes)
+tmp <- gsub("\\.$", "", tmp)
+head(tmp)
+# [1] "Q60765" "P17879" "Q9Z0F5" "Q3TX21" "P01101" "Q544D6"
+
+# > Down
+down_genes <- df %>% filter(Expression == 'Down-regulated') %>% 
+  arrange(padj, desc(abs(log2FoldChange)))
+# Extraer solo el nombre de los genes
+down_genes <- rownames(down_genes) 
+tmp2 <- as.vector(down_genes)
+tmp2 <- gsub("\\.[0-9]*", ".", down_genes)
+tmp2 <- gsub("\\.$", "", tmp2)
+head(tmp2)
+
+# 
+multi_gp <- gost(list("Upregulated" = tmp, 
+                      "Downregulated" = tmp2),
+                 organism = 'hsapiens',
+                 evcodes = TRUE,
+                 correction_method = "fdr", user_threshold = 0.05,
+                 multi_query = FALSE, ordered_query = TRUE, 
+                 sources = sources_db)
+
+## ---- colors ---
+# paleta de colores
+Category_colors <- data.frame(
+  category = c("GO:BP", "GO:CC", "GO:MF", "KEGG",
+               'REAC', 'TF', 'MIRNA', 'HPA', 'CORUM', 'HP', 'WP'), 
+  label = c('Biological Process', 'Cellular Component', 'Molecular Function',  "KEGG",
+            'REAC', 'TF', 'MIRNA', 'HPA', 'CORUM', 'HP', 'WP'),
+  colors =  c('#FF9900', '#109618','#DC3912', '#DD4477',
+              '#3366CC','#5574A6', '#22AA99', '#6633CC', '#66AA00', '#990099', '#0099C6'))
+
+## ----manhattan plot--------
+gostp1 <- gostplot(multi_gp, interactive = FALSE)
+
+# Guardar grafica
+ggsave(paste0(figdir, "ManhattanGO_", plot_name, ".png"),
+       plot = gostp1, dpi = 300)
+
+## ----Dataframe de todos los datos --------
+# Convertir a dataframe
+gost_query <- as.data.frame(multi_gp$result)
+
+# Extarer informacion en modo matriz de todos los resultados
+bar_data <- data.frame("term" = as.factor(gost_query$term_name), "condition" = gost_query$query, 
+                       "count" = gost_query$term_size, "p.adjust" = gost_query$p_value, 
+                       'category' = as.factor(gost_query$source), "go_id" = as.factor(gost_query$term_id),
+                       'geneNames' = gost_query$intersection
+)
+
+
+## ---- DOWN genes ----
+bar_data_down <- subset(bar_data, condition == 'Downregulated')
+
+# Ordenar datos y seleccion por pvalue
+bar_data_down <-head(bar_data_down[order(bar_data_down$p.adjust),],40) # order by pvalue
+bar_data_down_ordered <- bar_data_down[order(bar_data_down$p.adjust),] # order by pvalue
+bar_data_down_ordered<- bar_data_down_ordered[order(bar_data_down_ordered$category),] # order by category
+bar_data_down_ordered$p.val <- round(-log10(bar_data_down_ordered$p.adjust), 2)
+bar_data_down_ordered$num <- seq(1:nrow(bar_data_down_ordered)) # num category for plot
+
+# Guardar dataset
+save(bar_data_down_ordered, file = paste0(outdir, "DOWN_GO_", plot_name, ".RData"))
+
+# agregar colores para la grafica
+bar_data_down_ordered_mod <- left_join(bar_data_down_ordered, Category_colors, by= "category")
+
+### ---- DOWN genes (barplot) ----
+# Generar la grafica
+g.down <- ggplot(bar_data_down_ordered_mod, aes(p.val, reorder(term, -num), fill = category)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = p.val),
+    color = "black",
+    hjust = 0,
+    size = 2.2,
+    position = position_dodge(0)
+  ) +
+  labs(x = "-log10(p-value)" , y = NULL) +
+  scale_fill_manual(name='Category', 
+                    labels = unique(bar_data_down_ordered_mod$label), 
+                    values = unique(bar_data_down_ordered_mod$colors)) +
+  theme(
+    legend.position = "right",
+    axis.title.y = element_blank(),
+    strip.text.x = element_text(size = 11, face = "bold"),
+    strip.background = element_blank()
+  )+ theme_classic()
+
+
+# Guardar la figura
+ggsave(paste0(figdir,"barplotDOWN_GO_", plot_name, ".png"),
+       plot = g.down + theme_classic(), dpi = 600, width = 10, height = 5)
+
+
+
+## ---- UP genes ----
+bar_data_up <- subset(bar_data, condition == 'Upregulated')
+
+# Ordenar datos y seleccion por pvalue
+bar_data_up <-head(bar_data_up[order(bar_data_up$p.adjust),],40) # order by pvalue
+bar_data_up_ordered <- bar_data_up[order(bar_data_up$p.adjust),] # order by pvalue
+bar_data_up_ordered<- bar_data_up_ordered[order(bar_data_up_ordered$category),] # order by category
+bar_data_up_ordered$p.val <- round(-log10(bar_data_up_ordered$p.adjust), 2)
+bar_data_up_ordered$num <- seq(1:nrow(bar_data_up_ordered)) # num category for plot
+
+# Guardar dataset
+save(bar_data_up_ordered, file = paste0(outdir, "UP_GO_", plot_name, ".RData"))
+
+# agregar colores para la grafica
+bar_data_up_ordered_mod <- left_join(bar_data_up_ordered, Category_colors, by= "category")
+
+### ---- UP genes (barplot) ----
+# Generar la grafica
+g.up <- ggplot(bar_data_up_ordered_mod, aes(p.val, reorder(term, -num), fill = category)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = p.val),
+    color = "black",
+    hjust = 0,
+    size = 2.2,
+    position = position_dodge(0)
+  ) +
+  labs(x = "-log10(p-value)" , y = NULL) +
+  scale_fill_manual(name='Category', 
+                    labels = unique(bar_data_up_ordered_mod$label), 
+                    values = unique(bar_data_up_ordered_mod$colors)) +
+  theme(
+    legend.position = "right",
+    # panel.grid = element_blank(),
+    # axis.text.x = element_blank(),
+    # axis.ticks = element_blank(),
+    axis.title.y = element_blank(),
+    strip.text.x = element_text(size = 11, face = "bold"),
+    strip.background = element_blank() 
+  ) + theme_classic()
+
+# Guardar la figura
+ggsave(paste0(figdir, "barplotUP_GO_", plot_name, ".png"),
+       plot = g.up + theme_classic(), dpi = 600, width = 10, height = 5)
+```
+
+We downloaded the figures to our computer to analyze the data.
+
+```{bash gencode, eval=FALSE}
+
+scp scp -r rsanchez@dna.lavis.unam.mx:/mnt/Guanina/bioinfo24/Equipoazulito/human/results/figures /home/rs-santos/RNA-seq-multiqc\ 1
+```
+
+### Functional analysis.
+
+![](images/ManhattanGO_tratamiento_c12_vs_control.png) ![](images/ManhattanGO_tratamiento_b7_vs_control.png) ![](images/barplotDOWN_GO_tratamiento_b7_vs_control.png) ![](images/barplotDOWN_GO_tratamiento_c12_vs_control.png) ![](images/barplotUP_GO_tratamiento_b7_vs_control.png)
+
+![](images/barplotUP_GO_tratamiento_c12_vs_control.png)
+
+In our blotplots, a significant association of genes with various biological processes is evident. It is noteworthy that, in the B7 treatment, the genes related in the up and down regions are mostly linked to neuronal activities and the nervous system. On the other hand, for the C12 treatment, in the up region, there is a higher association with the composition and function of protein complexes, while in the down region, a strong relationship with transcription factors, particularly the NRSF and REST factors, is observed. We can observe the same behavior in the Dotplots.
+
+# Conclusion
+
+Our analysis reveals significant associations of genes with various biological processes, particularly evident in the B7 and C12 treatments. In the B7 treatment, genes are predominantly linked to neuronal activities and processes of the nervous system, while in the C12 treatment, a higher association is observed with the composition and function of protein complexes, as well as with transcription factors such as NRSF and REST. These findings shed light on potential molecular mechanisms underlying the effects of B7 and C12 treatments.
+
+Considering the context of Huntington's disease, characterized by neuronal dysfunction and progressive neurodegeneration, the observed associations with neuronal processes and protein complex composition may provide valuable insights. Dysregulation of transcriptional processes mediated by factors like NRSF and REST has been implicated in Huntington's disease pathogenesis.
+
+# References
+
+Bensalel J, Xu H, Lu ML, Capobianco E, Wei J. RNA-seq analysis reveals significant transcriptome changes in huntingtin-null human neuroblastoma cells. BMC Med Genomics. 2021 Jul 2;14(1):176. doi: 10.1186/s12920-021-01022-w. PMID: 34215255; PMCID: PMC8252266.
+
+Nopoulos PC. Huntington disease: a single-gene degenerative disorder of the striatum. Dialogues Clin Neurosci. 2016 Mar;18(1):91-8. doi: 10.31887/DCNS.2016.18.1/pnopoulos. PMID: 27069383; PMCID: PMC4826775.
+
+Chen ZX, Zou XP, Yan HQ, Zhang R, Pang JS, Qin XG, He RQ, Ma J, Feng ZB, Chen G, Gan TQ. Identification of putative drugs for gastric adenocarcinoma utilizing differentially expressed genes and connectivity map. Mol Med Rep. 2019 Feb;19(2):1004-1015. doi: 10.3892/mmr.2018.9758. Epub 2018 Dec 13. PMID: 30569111; PMCID: PMC6323227.
+
+The Gene Ontology Consortium, The Gene Ontology Resource: 20 years and still GOing strong, Nucleic Acids Research, Volume 47, Issue D1, 08 January 2019, Pages D330--D338, <https://doi.org/10.1093/nar/gky1055>
